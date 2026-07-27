@@ -11,6 +11,7 @@
 /*.exe
 /*.test
 /*.out
+/halonotif-engine-linux-*
 *.log
 *.tmp
 

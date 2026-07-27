@@ -28,12 +28,20 @@ import (
 // Global map penyimpan sesi WA
 var clientMap = make(map[string]*whatsmeow.Client)
 
+func getEnv(name, fallback string) string {
+	value := os.Getenv(name)
+	if value != "" {
+		return value
+	}
+	return fallback
+}
+
 // ==============================================================================
 // FUNGSI PELAPOR WEBHOOK KE CI3
 // ==============================================================================
 func kirimWebhookKeCI3(sessionID string, statusKoneksi string) {
-	webhookURL := "http://localhost/halonotif/api/webhook_device"
-	apiKey := "RAHASIA_NEGARA_123"
+	webhookURL := getEnv("WEBHOOK_URL", "https://hellonotif.vetencode.com/api/webhook_device")
+	apiKey := os.Getenv("ENGINE_API_KEY")
 
 	payload := map[string]string{
 		"session_id": sessionID,
@@ -109,6 +117,11 @@ func restoreSessions(container *sqlstore.Container) {
 // MAIN FUNCTION & API ENDPOINTS
 // ==============================================================================
 func main() {
+	apiKey := os.Getenv("ENGINE_API_KEY")
+	if apiKey == "" {
+		panic("ENGINE_API_KEY wajib diisi")
+	}
+
 	dbLog := waLog.Stdout("Database", "ERROR", true)
 	container, err := sqlstore.New(context.Background(), "sqlite", "file:halonotif_sessions.db?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)", dbLog)
 	if err != nil {
@@ -124,7 +137,7 @@ func main() {
 	// Middleware API Key
 	router.Use(func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
-		if token != "Bearer RAHASIA_NEGARA_123" {
+		if token != "Bearer "+apiKey {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": "error", "pesan": "Unauthorized Access"})
 			c.Abort()
 			return
@@ -326,9 +339,12 @@ func main() {
 	})
 
 	// --- RUN SERVER ---
+	engineAddress := getEnv("ENGINE_ADDRESS", "127.0.0.1:3000")
 	go func() {
 		fmt.Println("🚀 HaloNotif WA Engine berjalan di Port 3000...")
-		router.Run(":3000")
+		if errRun := router.Run(engineAddress); errRun != nil {
+			panic(errRun)
+		}
 	}()
 
 	// --- GRACEFUL SHUTDOWN ---
