@@ -1,0 +1,24 @@
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+
+# WhatsApp session database
+/halonotif_sessions.db
+/halonotif_sessions.db-*
+
+# Go build and test artifacts
+/*.exe
+/*.test
+/*.out
+*.log
+*.tmp
+
+# Editor and operating system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
